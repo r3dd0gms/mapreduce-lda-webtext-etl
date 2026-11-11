@@ -48,9 +48,3 @@ Then start Jupyter (or VS Code) and open a notebook from `notebooks/`. Paths are
 
 Q3 and Q4 fetch live web pages (Wikipedia, quotes.toscrape.com), so they need an internet connection. Q4.3 needs a PostgreSQL database; the notebook reproduces both SQL investigations with `dplyr` so it can be followed without one.
 
-## Known gaps
-
-* **Q2 dataset missing.** `news.zip` was not in the folder this repo was built from. Add it to `data/q2_news/` (see the README there).
-* **`data/q4_quotes/cleaned_quotes_dataset.csv` looks out of date.** It contains only 10 real quotes followed by 10 truncated `[Missing Quote Conten]` rows, whereas the PostgreSQL screenshot in the documentation shows all 20 quotes with only one missing. Re-run `Q4_etl_and_sql_analysis.ipynb` (cells 4.1 and 4.2) to regenerate it.
-* **Notebooks were assembled, not executed**, so their code cells have no outputs yet. Run them once and save before pushing if you want outputs to display on GitHub.
-* The notebook versions of Q2 and Q3 fix small bugs in the original scripts (`stringAsFactors` typo, deprecated `data_frame()`); the scripts in `src/` are unchanged.
