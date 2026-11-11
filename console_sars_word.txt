@@ -1,0 +1,41 @@
+=== Keyword: 'sars'   match mode: word   corpus: map_reduce_test_docs (7 documents) ===
+
+--- 1. INPUT SPLITS: one split (= one map task) per document ---
+  doc1.txt                         55 lines
+  doc2.txt                         64 lines
+  doc3.txt                         56 lines
+  doc4.txt                         24 lines
+  doc5.txt                         48 lines
+  doc6.txt                         21 lines
+  doc7.txt                         39 lines
+
+--- 2. MAP: <document, row:col> for every occurrence ---
+doc1.txt	3:36
+doc1.txt	5:51
+doc1.txt	9:80
+doc1.txt	11:30
+doc1.txt	17:164
+doc1.txt	19:4
+doc1.txt	33:7
+doc1.txt	42:1
+doc1.txt	46:136
+doc1.txt	52:91
+doc1.txt	53:119
+
+--- 3. SHUFFLE & SORT: group by key (document name) ---
+doc1.txt	11:30
+doc1.txt	17:164
+doc1.txt	19:4
+doc1.txt	33:7
+doc1.txt	3:36
+doc1.txt	42:1
+doc1.txt	46:136
+doc1.txt	52:91
+doc1.txt	53:119
+doc1.txt	5:51
+doc1.txt	9:80
+
+--- 4. REDUCE: one line per document  ->  document, hits, (row,col) list ---
+doc1.txt	11	(3,36) (5,51) (9,80) (11,30) (17,164) (19,4) (33,7) (42,1) (46,136) (52,91) (53,119)
+
+Saved: output/part-00000_sars_word.txt  and  output/locations_sars_word.csv

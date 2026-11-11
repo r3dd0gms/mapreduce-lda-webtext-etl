@@ -1,0 +1,89 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<!--
+  keyword-search-conf.xml  -  Hadoop MapReduce job configuration   (Question 1.4)
+
+  Passed to the job with the generic option   -conf config/keyword-search-conf.xml
+  The search keyword is deliberately NOT in this file: it is supplied on the
+  command line (run_hadoop.sh -> -cmdenv KEYWORD=<keyword>) so one job
+  definition can search for any word.
+-->
+<configuration>
+
+  <!-- ===== Input handling =================================================== -->
+  <property>
+    <name>mapreduce.input.fileinputformat.split.minsize</name>
+    <value>1073741824</value>
+    <description>
+      1 GiB. Split size = max(minsize, min(maxsize, blocksize)), so a minimum
+      larger than any document gives exactly ONE split (= one map task) per
+      document. The mapper numbers rows by counting lines from the top of its
+      split, so a split must always start at the beginning of a file.
+    </description>
+  </property>
+
+  <property>
+    <name>mapreduce.input.fileinputformat.input.dir.recursive</name>
+    <value>true</value>
+    <description>Also read documents in sub-folders of the input directory
+    (the corpus zip may unpack into folders).</description>
+  </property>
+
+  <!-- ===== Streaming key / value layout ===================================== -->
+  <property>
+    <name>stream.num.map.output.key.fields</name>
+    <value>1</value>
+    <description>Key = the first tab-separated field of a mapper line (the
+    document name). The rest ("row:col") is the value.</description>
+  </property>
+
+  <!-- stream.map.output.field.separator is left at its default (a tab), which
+       is what mapper.R writes between the document name and "row:col". -->
+
+  <!-- ===== Reduce side ====================================================== -->
+  <property>
+    <name>mapreduce.job.reduces</name>
+    <value>1</value>
+    <description>One reducer produces a single, sorted result file
+    (part-00000). Output is tiny, so there is no benefit from more.</description>
+  </property>
+
+  <!-- ===== Resources (R runs OUTSIDE the JVM heap, so leave headroom) ======= -->
+  <property>
+    <name>mapreduce.map.memory.mb</name>
+    <value>1024</value>
+    <description>Container size per map task: JVM + the Rscript process.</description>
+  </property>
+  <property>
+    <name>mapreduce.map.java.opts</name>
+    <value>-Xmx512m</value>
+    <description>JVM heap kept below the container limit, leaving room for R.</description>
+  </property>
+  <property>
+    <name>mapreduce.reduce.memory.mb</name>
+    <value>1024</value>
+  </property>
+  <property>
+    <name>mapreduce.reduce.java.opts</name>
+    <value>-Xmx512m</value>
+  </property>
+
+  <!-- ===== Fault tolerance ================================================== -->
+  <property>
+    <name>mapreduce.map.maxattempts</name>
+    <value>4</value>
+    <description>A failed map task is re-run (on another node if needed). Safe
+    because the mapper is idempotent: same split in, same pairs out.</description>
+  </property>
+  <property>
+    <name>mapreduce.reduce.maxattempts</name>
+    <value>4</value>
+  </property>
+
+  <!-- ===== Scheduling ======================================================= -->
+  <property>
+    <name>mapreduce.job.queuename</name>
+    <value>default</value>
+  </property>
+
+</configuration>

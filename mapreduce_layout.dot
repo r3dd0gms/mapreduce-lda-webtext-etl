@@ -1,0 +1,103 @@
+// Logical layout of the keyword-location MapReduce job (Question 1.1)
+// Render:  dot -Tpng -Gdpi=130 mapreduce_layout.dot -o mapreduce_layout.png
+// Each stage of the framework is one horizontal band: description on the left,
+// the parallel tasks / records side by side on the right.
+digraph keyword_search {
+  rankdir=TB;
+  splines=true;
+  nodesep=0.35;
+  ranksep=0.50;
+  fontname="DejaVu Sans";
+  labelloc=t;
+  fontsize=20;
+  label=<<B>Keyword search (keyword = "africa") as a MapReduce job</B><BR/><FONT POINT-SIZE="12">Wanted: for every document, the ROW and COLUMN of each occurrence (case-insensitive)</FONT><BR/><FONT POINT-SIZE="10">Example: 3 of the 7 documents in map_reduce_test_docs (file names shortened to doc1 / doc3 inside the pairs)</FONT><BR/> >;
+  node [fontname="DejaVu Sans", fontsize=11, shape=plaintext, margin=0];
+  edge [fontname="DejaVu Sans", fontsize=10, color="#444444", arrowsize=0.8, penwidth=1.2];
+
+  // ---------------- control plane ----------------
+  client [shape=box, style="rounded,filled", fillcolor="#eeeeee", color="#555555", margin="0.12,0.08",
+          label=<<B>CLIENT / DRIVER</B><BR/>run_hadoop.sh africa<BR/><FONT POINT-SIZE="9">-cmdenv KEYWORD=africa<BR/>-conf keyword-search-conf.xml</FONT>>];
+  master [shape=box, style="rounded,filled", fillcolor="#eeeeee", color="#555555", margin="0.12,0.08",
+          label=<<B>MASTER</B>  (JobTracker / ResourceManager)<BR/><FONT POINT-SIZE="9">creates one map task per split and schedules it near the data<BR/>monitors tasks, re-runs failed ones, starts the reducer</FONT>>];
+  { rank=same; client; master; }
+  client -> master [label=" submit job + keyword"];
+
+  // ---------------- 1 INPUT ----------------
+  input [label=<
+    <TABLE BORDER="1" STYLE="rounded" COLOR="#888888" CELLBORDER="1" CELLSPACING="8" CELLPADDING="6" BGCOLOR="#f4f4f4">
+      <TR>
+        <TD BORDER="0" WIDTH="190" ALIGN="LEFT"><B>1  INPUT (HDFS)</B><BR ALIGN="LEFT"/><FONT POINT-SIZE="9">the news documents<BR ALIGN="LEFT"/>(map_reduce_test_docs, 7 files)</FONT><BR ALIGN="LEFT"/></TD>
+        <TD PORT="a" BGCOLOR="white" WIDTH="190">doc1.txt<BR/><FONT POINT-SIZE="9">55 lines</FONT></TD>
+        <TD PORT="b" BGCOLOR="white" WIDTH="190">doc3.txt<BR/><FONT POINT-SIZE="9">56 lines</FONT></TD>
+        <TD PORT="c" BGCOLOR="white" WIDTH="190">doc4.txt<BR/><FONT POINT-SIZE="9">24 lines, no keyword</FONT></TD>
+      </TR>
+    </TABLE>>];
+
+  // ---------------- 2 SPLITS ----------------
+  splits [label=<
+    <TABLE BORDER="1" STYLE="rounded" COLOR="#888888" CELLBORDER="1" CELLSPACING="8" CELLPADDING="6" BGCOLOR="#f4f4f4">
+      <TR>
+        <TD BORDER="0" WIDTH="190" ALIGN="LEFT"><B>2  INPUT SPLITS</B><BR ALIGN="LEFT"/><FONT POINT-SIZE="9">one split per file, so the<BR ALIGN="LEFT"/>row count starts at line 1<BR ALIGN="LEFT"/>(split.minsize = 1 GiB)</FONT><BR ALIGN="LEFT"/></TD>
+        <TD PORT="a" BGCOLOR="white" WIDTH="190">split 1<BR/><FONT POINT-SIZE="9">whole file</FONT></TD>
+        <TD PORT="b" BGCOLOR="white" WIDTH="190">split 2<BR/><FONT POINT-SIZE="9">whole file</FONT></TD>
+        <TD PORT="c" BGCOLOR="white" WIDTH="190">split 3<BR/><FONT POINT-SIZE="9">whole file</FONT></TD>
+      </TR>
+    </TABLE>>];
+
+  // ---------------- 3 MAP ----------------
+  map [label=<
+    <TABLE BORDER="1" STYLE="rounded" COLOR="#4a7fb5" CELLBORDER="1" CELLSPACING="8" CELLPADDING="6" BGCOLOR="#e8f1fb">
+      <TR>
+        <TD BORDER="0" WIDTH="190" ALIGN="LEFT"><B>3  MAP</B>  (mapper.R)<BR ALIGN="LEFT"/><FONT POINT-SIZE="9">tasks run in parallel. Each one:<BR ALIGN="LEFT"/>1. numbers the lines (row)<BR ALIGN="LEFT"/>2. finds every match, ignoring<BR ALIGN="LEFT"/>    case (column)<BR ALIGN="LEFT"/>3. emits &lt;document, row:col&gt;</FONT><BR ALIGN="LEFT"/></TD>
+        <TD PORT="a" BGCOLOR="white" WIDTH="190"><B>map task 1</B><BR/><FONT POINT-SIZE="10">&lt;doc1, 1:64&gt;</FONT></TD>
+        <TD PORT="b" BGCOLOR="white" WIDTH="190"><B>map task 2</B><BR/><FONT POINT-SIZE="10">&lt;doc3, 1:38&gt;<BR/>&lt;doc3, 3:7&gt;<BR/>&lt;doc3, 5:7&gt;<BR/>&lt;doc3, 40:146&gt;<BR/>... 8 pairs in all</FONT></TD>
+        <TD PORT="c" BGCOLOR="white" WIDTH="190"><B>map task 3</B><BR/><FONT POINT-SIZE="10">no match,<BR/>emits nothing</FONT></TD>
+      </TR>
+    </TABLE>>];
+
+  // ---------------- 4 SHUFFLE & SORT ----------------
+  shuffle [label=<
+    <TABLE BORDER="1" STYLE="rounded" COLOR="#c98a00" CELLBORDER="1" CELLSPACING="8" CELLPADDING="6" BGCOLOR="#fff4dc">
+      <TR>
+        <TD BORDER="0" WIDTH="190" ALIGN="LEFT"><B>4  SHUFFLE &amp; SORT</B><BR ALIGN="LEFT"/><FONT POINT-SIZE="9">group the pairs by key<BR ALIGN="LEFT"/>(document name) and send<BR ALIGN="LEFT"/>each group to the reducer.<BR ALIGN="LEFT"/>Values arrive in text order<BR ALIGN="LEFT"/>(40:146 before 5:7).</FONT><BR ALIGN="LEFT"/></TD>
+        <TD PORT="a" BGCOLOR="white" WIDTH="190"><FONT POINT-SIZE="10">doc1 &#8594; [ 1:64 ]</FONT></TD>
+        <TD PORT="b" BGCOLOR="white" WIDTH="190"><FONT POINT-SIZE="10">doc3 &#8594; [ 1:38, 3:7, 40:146,<BR/>46:7, 50:142, 52:86,<BR/>54:44, 5:7 ]</FONT></TD>
+        <TD PORT="c" BGCOLOR="#fff4dc" STYLE="dashed" WIDTH="190"><FONT POINT-SIZE="10" COLOR="#777777">doc4: no pairs,<BR/>nothing to group</FONT></TD>
+      </TR>
+    </TABLE>>];
+
+  // ---------------- 5 REDUCE ----------------
+  reduce [label=<
+    <TABLE BORDER="1" STYLE="rounded" COLOR="#3c8d3c" CELLBORDER="1" CELLSPACING="8" CELLPADDING="6" BGCOLOR="#e6f4e6">
+      <TR>
+        <TD BORDER="0" WIDTH="190" ALIGN="LEFT"><B>5  REDUCE</B>  (reducer.R)<BR ALIGN="LEFT"/><FONT POINT-SIZE="9">for each document: sort the<BR ALIGN="LEFT"/>locations by (row, col) as<BR ALIGN="LEFT"/>numbers, count them and write<BR ALIGN="LEFT"/>one line</FONT><BR ALIGN="LEFT"/></TD>
+        <TD PORT="r" COLSPAN="3" BGCOLOR="white" WIDTH="586"><B>reduce task</B>  (1 reducer, config: mapreduce.job.reduces = 1)</TD>
+      </TR>
+    </TABLE>>];
+
+  // ---------------- 6 OUTPUT ----------------
+  output [label=<
+    <TABLE BORDER="1" STYLE="rounded" COLOR="#888888" CELLBORDER="1" CELLSPACING="8" CELLPADDING="6" BGCOLOR="#f4f4f4">
+      <TR>
+        <TD BORDER="0" WIDTH="190" ALIGN="LEFT"><B>6  OUTPUT (HDFS)</B><BR ALIGN="LEFT"/><FONT POINT-SIZE="9">part-00000:<BR ALIGN="LEFT"/>document, hits, (row,col) list</FONT><BR ALIGN="LEFT"/></TD>
+        <TD PORT="o" COLSPAN="3" BGCOLOR="white" WIDTH="586" ALIGN="LEFT"><FONT FACE="DejaVu Sans Mono" POINT-SIZE="10">doc1.txt  1  (1,64)<BR ALIGN="LEFT"/>doc3.txt  8  (1,38) (3,7) (5,7) (40,146) (46,7) (50,142) (52,86) (54,44)<BR ALIGN="LEFT"/></FONT></TD>
+      </TR>
+    </TABLE>>];
+
+  // ---------------- data flow ----------------
+  master -> input [style=invis];
+  input:a:s -> splits:a:n;
+  input:b:s -> splits:b:n;
+  input:c:s -> splits:c:n;
+  splits:a:s -> map:a:n;
+  splits:b:s -> map:b:n;
+  splits:c:s -> map:c:n;
+  map:a:s -> shuffle:a:n;
+  map:b:s -> shuffle:b:n;
+  shuffle:a:s -> reduce:r:n;
+  shuffle:b:s -> reduce:r:n;
+  reduce:r:s -> output:o:n;
+
+  // invisible high-weight edges keep every band centred on the same vertical axis
+  input -> splits -> map -> shuffle -> reduce -> output [style=invis, weight=100];
+}

@@ -1,0 +1,11 @@
+# R / RStudio
+.Rhistory
+.RData
+.Rproj.user/
+# Jupyter
+.ipynb_checkpoints/
+# OS junk
+.DS_Store
+__MACOSX/
+# Generated when running Q2
+data/q2_news/extracted_news/

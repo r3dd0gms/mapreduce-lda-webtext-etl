@@ -1,0 +1,66 @@
+=== Keyword: 'africa'   match mode: substring   corpus: map_reduce_test_docs (7 documents) ===
+
+--- 1. INPUT SPLITS: one split (= one map task) per document ---
+  doc1.txt                         55 lines
+  doc2.txt                         64 lines
+  doc3.txt                         56 lines
+  doc4.txt                         24 lines
+  doc5.txt                         48 lines
+  doc6.txt                         21 lines
+  doc7.txt                         39 lines
+
+--- 2. MAP: <document, row:col> for every occurrence ---
+doc1.txt	1:64
+doc1.txt	3:11
+doc1.txt	3:95
+doc2.txt	1:57
+doc2.txt	3:32
+doc2.txt	33:24
+doc2.txt	58:5
+doc2.txt	58:81
+doc3.txt	1:38
+doc3.txt	3:7
+doc3.txt	5:7
+doc3.txt	40:146
+doc3.txt	46:7
+doc3.txt	48:112
+doc3.txt	50:142
+doc3.txt	52:86
+doc3.txt	54:44
+doc5.txt	1:62
+doc5.txt	3:88
+doc5.txt	23:121
+doc5.txt	38:27
+doc5.txt	48:217
+
+--- 3. SHUFFLE & SORT: group by key (document name) ---
+doc1.txt	1:64
+doc1.txt	3:11
+doc1.txt	3:95
+doc2.txt	1:57
+doc2.txt	33:24
+doc2.txt	3:32
+doc2.txt	58:5
+doc2.txt	58:81
+doc3.txt	1:38
+doc3.txt	3:7
+doc3.txt	40:146
+doc3.txt	46:7
+doc3.txt	48:112
+doc3.txt	50:142
+doc3.txt	52:86
+doc3.txt	54:44
+doc3.txt	5:7
+doc5.txt	1:62
+doc5.txt	23:121
+doc5.txt	38:27
+doc5.txt	3:88
+doc5.txt	48:217
+
+--- 4. REDUCE: one line per document  ->  document, hits, (row,col) list ---
+doc1.txt	3	(1,64) (3,11) (3,95)
+doc2.txt	5	(1,57) (3,32) (33,24) (58,5) (58,81)
+doc3.txt	9	(1,38) (3,7) (5,7) (40,146) (46,7) (48,112) (50,142) (52,86) (54,44)
+doc5.txt	5	(1,62) (3,88) (23,121) (38,27) (48,217)
+
+Saved: output/part-00000_africa_substring.txt  and  output/locations_africa_substring.csv
