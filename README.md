@@ -1,4 +1,4 @@
-# ITBDA Formative Assessment 2
+# Big-data analytics project
 
 Big-data analytics project covering four questions: a MapReduce keyword search, topic modelling with LDA, a web-text information-extraction proof of concept, and an ETL pipeline with SQL analysis. All code is in R (plus SQL for PostgreSQL).
 
